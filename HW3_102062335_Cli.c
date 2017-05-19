@@ -98,12 +98,14 @@ int main(int argc, char **argv) {
 			scanf("%s", ip);
 			struct sockaddr_in dstaddr;
 			int dstfd;
+
 			dstfd = socket(AF_INET, SOCK_STREAM, 0);
 			bzero(&dstaddr, sizeof(dstaddr));
-			servaddr.sin_port = htons(1500);
-			servaddr.sin_family = AF_INET;
-			servaddr.sin_addr.s_addr = inet_addr(ip);
+			dstaddr.sin_port = htons(1500);
+			dstaddr.sin_family = AF_INET;
+			dstaddr.sin_addr.s_addr = inet_addr(ip);
 			connect(dstfd, (SA*)&dstaddr, sizeof(dstaddr));
+			
 			read(dstfd, msg, MAXLINE);
 			puts(msg);
 			bzero(msg, sizeof(msg));
