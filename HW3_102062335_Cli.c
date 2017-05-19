@@ -12,15 +12,16 @@ Member self;
 
 void help();
 void updatef(int sockfd);
-void *tcpListener(void *arg);
+void *tcpListener();
 char user[40];
 
 int main(int argc, char **argv) {
 	int sockfd;
 	int n, i, j;
-	pthread_t ttcp, tudp;
+	pthread_t ttcp;
 	struct sockaddr_in servaddr;
 
+	pthread_create(&ttcp, NULL, &tcpListener, NULL);
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	bzero(&servaddr, sizeof(servaddr));
 	servaddr.sin_port = htons(atoi(argv[2]));
@@ -61,16 +62,6 @@ int main(int argc, char **argv) {
 				/*- update current files to server -*/
 				updatef(sockfd);
 				puts("Data update is complete.");
-
-				/*- build tcp listener -*/
-				puts("Building tcp listener...");
-				int *tcpport;
-				tcpport = malloc(sizeof(int));
-				*tcpport = atoi(msg);
-				pthread_create(&ttcp, NULL, &tcpListener, tcpport);
-				//port = atoi(msg);
-				
-				puts("Building tcp listener is complete.");
 
 				bzero(msg, sizeof(msg));
 			}
@@ -177,14 +168,14 @@ void updatef(int sockfd) {
 	system("rm list");
 }
 
-void* tcpListener(void *arg) {
+void* tcpListener() {
 	puts("thread start");
-	int port = *((int*)arg);
+	int port = 1500;
 	free(arg);
 	printf("tcpport: %d\n", port);
 	struct sockaddr_in tcpSer, client;
 	int tcpfd;
-	
+
 	tcpfd = socket(AF_INET, SOCK_STREAM, 0);
 	bzero(&tcpSer, sizeof(tcpSer));
 
