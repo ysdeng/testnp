@@ -105,7 +105,7 @@ int main(int argc, char **argv) {
 			dstaddr.sin_family = AF_INET;
 			dstaddr.sin_addr.s_addr = inet_addr(ip);
 			connect(dstfd, (SA*)&dstaddr, sizeof(dstaddr));
-			
+
 			read(dstfd, msg, MAXLINE);
 			puts(msg);
 			bzero(msg, sizeof(msg));
@@ -116,11 +116,12 @@ int main(int argc, char **argv) {
 
 void help () {
 	printf("we provide following service\n");
-	printf("login\n");
-	printf("logout\n");
+	printf("login: login with a name\n");
+	printf("logout: terminal the service\n");
 	printf("listu: list online user's infos\n");
 	printf("listf: list online user's files\n");
 	printf("updatef: update local files\n");
+	printf("connect: connect to other user\n");
 }
 
 void updatef(int sockfd) {
