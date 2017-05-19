@@ -95,13 +95,12 @@ int main(int argc, char **argv) {
 		}
 		if(!strcmp(msg, "connect")) {
 			char ip[40];
-			int dstport;
-			scanf("%s%d", ip, &dstport);
+			scanf("%s", ip);
 			struct sockaddr_in dstaddr;
 			int dstfd;
 			dstfd = socket(AF_INET, SOCK_STREAM, 0);
 			bzero(&dstaddr, sizeof(dstaddr));
-			servaddr.sin_port = htons(dstport);
+			servaddr.sin_port = htons(1500);
 			servaddr.sin_family = AF_INET;
 			servaddr.sin_addr.s_addr = inet_addr(ip);
 			connect(dstfd, (SA*)&dstaddr, sizeof(dstaddr));
