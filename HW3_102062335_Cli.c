@@ -171,7 +171,6 @@ void updatef(int sockfd) {
 void* tcpListener() {
 	puts("thread start");
 	int port = 1500;
-	free(arg);
 	printf("tcpport: %d\n", port);
 	struct sockaddr_in tcpSer, client;
 	int tcpfd;
