@@ -161,7 +161,6 @@ void* service( void *arg) {
 				sprintf(member[idx].files[i],"%s", msg);
 				bzero(msg, sizeof(msg));
 				puts(member[idx].files[i]);
-				write(clisock.clifd, "ACK", strlen("ACK"));
 			}
 			pthread_mutex_unlock(&memberLock);
 		}

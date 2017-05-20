@@ -407,11 +407,6 @@ void updatef(int sockfd) {
 			puts(fname);
 			strcpy(msg, fname);
 			write(sockfd, msg, strlen(msg));
-			while(1) {
-				bzero(msg, sizeof(msg));
-				read(sockfd, msg, MAXLINE);
-				if(!strcmp(msg, "ACK")) break;
-			}
 		}
 		fclose(fp);
 	}
