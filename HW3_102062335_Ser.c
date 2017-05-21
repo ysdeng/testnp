@@ -143,6 +143,7 @@ void* service( void *arg) {
 			bzero(msg, sizeof(msg));
 			//get file count
 			read(clisock.clifd, msg, MAXLINE);
+			//write(clisock.clifd, "ACK", strlen("ACK"));
 			int count = atoi(msg), i;
 			bzero(msg, sizeof(msg));
 			//find user
@@ -161,6 +162,7 @@ void* service( void *arg) {
 				sprintf(member[idx].files[i],"%s", msg);
 				bzero(msg, sizeof(msg));
 				puts(member[idx].files[i]);
+				
 			}
 			pthread_mutex_unlock(&memberLock);
 		}
@@ -256,9 +258,12 @@ void* service( void *arg) {
 			int all, part;
 			char fname[40];
 			sscanf(buf, "%d%d", &part, &all);
+			printf("%d/%d\n", part, all);
+
 			bzero(buf, sizeof(buf));
 			read(clisock.clifd, buf, MAXLINE);
 			sprintf(fname, "%s", buf);
+
 			pthread_mutex_lock(&fileLock);
 			char dd[80];
 			sprintf(dd, "%s/%s", "serData", fname);
@@ -266,19 +271,16 @@ void* service( void *arg) {
 			fseek(file, 0, SEEK_END); // seek to end of file
 			int size = ftell(file); // get current file pointer
 			int thispart = size/all;
-			sprintf(buf, "%d", thispart);
-			write(clisock.clifd, buf, strlen(buf));
-
-			char send[thispart];
-			fseek(file, thispart*part, SEEK_SET);
-			fread(send, 1, thispart, file);
+			sleep(1);
+			char send[MAXLINE];
+			fseek(file, 0, SEEK_SET);
+			fread(send, 1, MAXLINE, file);
 			write(clisock.clifd, send, strlen(send));
 			fclose(file);
 			pthread_mutex_unlock(&fileLock);
-			sprintf(buf, "%d", thispart*part);
-			write(clisock.clifd, buf, strlen(buf));
 			close(clisock.clifd);
 			printf("Done getf\n");
+			return NULL;
 		}
 		if(!strcmp(msg, "gets")) {
 			read(clisock.clifd, buf, MAXLINE);
@@ -294,10 +296,74 @@ void* service( void *arg) {
 			write(clisock.clifd, buf, strlen(buf));
 			close(clisock.clifd);
 			printf("Done gets\n");
+			return NULL;
+		}
+		if(!strcmp(msg, "recv")) {
+			bzero(msg, sizeof(msg));
+			read(clisock.clifd, msg, MAXLINE);
+			char dd[80];
+			sprintf(dd, "serData/%s", msg);
+			bzero(msg, sizeof(msg));
+			read(clisock.clifd, msg, MAXLINE);
+
+			pthread_mutex_lock(&fileLock);
+			file = fopen(dd, "w");
+			fprintf(file, "%s", msg);
+			fclose(file);
+			pthread_mutex_unlock(&fileLock);
+			close(clisock.clifd);
+			printf("Done recv\n");
+			return NULL;
+		}
+		if(!strcmp(msg, "sendf")) {
+			// i need know dst's ip, port
+			// i need know filename
+			puts("sendf");
+			bzero(buf, sizeof(buf));
+			read(connfd, buf, MAXLINE);
+			char dip[40];
+			int dport;
+			char filename[40];
+			sscanf(buf, "%s%d%s", dip, &dport, filename);
+			printf("to %s %d, file: %s\n", dip, dport, filename);
+			int part, all;
+			bzero(buf, sizeof(buf));
+			read(connfd, buf, MAXLINE);
+			sscanf(buf, "%d%d", &part, &all);
+			printf("send: %d/%d\n", part, all);
+
+			struct sockaddr_in dstaddr;
+			int dstfd;
+
+			dstfd = socket(AF_INET, SOCK_STREAM, 0);
+			bzero(&dstaddr, sizeof(dstaddr));
+
+			dstaddr.sin_port = htons(dport);
+
+			dstaddr.sin_family = AF_INET;
+			dstaddr.sin_addr.s_addr = inet_addr(dip);
+			connect(dstfd, (SA*)&dstaddr, sizeof(dstaddr));
+
+			write(dstfd, "recv", strlen("recv"));
+			sleep(1);
+			write(dstfd, filename, strlen(filename));
+			sleep(1);
+			char dd[80];
+			char bufff[MAXLINE];
+			strcpy(bufff, "");
+			sprintf(dd, "%s/%s", "serData", filename);
+			pthread_mutex_lock(&fileLock);
+
+			file = fopen(dd, "r");
+			fread(bufff, 1, MAXLINE, file);
+			fclose(file);
+			pthread_mutex_unlock(&fileLock);
+			write(dstfd, bufff, strlen(bufff));
+			puts("Done sendf");
+			return NULL;
 		}
 	}
 }
-
 
 void listServerFile() {
 	pthread_mutex_lock(&fileLock);
