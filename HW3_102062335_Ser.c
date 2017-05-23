@@ -301,7 +301,7 @@ void* service( void *arg) {
 			return NULL;
 		}
 		if(!strcmp(msg, "recv")) {
-			//char buf[MAXLINE];
+			char buf[MAXLINE];
 			bzero(buf, sizeof(buf));
 			read(clisock.clifd, buf, MAXLINE);
 			char dd[80];
@@ -316,13 +316,11 @@ void* service( void *arg) {
 			read(clisock.clifd, nnn, MAXLINE);
 
 			pthread_mutex_lock(&fileLock);
-			printf("%s\n", dd);
 			file = fopen(dd, "w");
 			fseek(file, start, SEEK_SET);
 			//int ss = end-start+1;
 			fwrite(nnn, 1, strlen(nnn), file);
 			fclose(file);
-			printf("%d---%lu %s\n",start, strlen(nnn), nnn);
 			pthread_mutex_unlock(&fileLock);
 			close(clisock.clifd);
 			printf("Done recv\n");
@@ -375,7 +373,7 @@ void* service( void *arg) {
 			int ss = end - from + 1;
 			bzero(buf, sizeof(buf));
 			fread(buf, 1, ss, file);
-			//fclose(file);
+			fclose(file);
 			pthread_mutex_unlock(&fileLock);
 			write(dstfd, buf, strlen(buf));
 			printf("%s\n", buf);
@@ -387,7 +385,6 @@ void* service( void *arg) {
 			pthread_mutex_lock(&fileLock);
 			fclose(file);
 			pthread_mutex_unlock(&fileLock);
-			close(clisock.clifd);
 			return NULL;
 		}
 		
