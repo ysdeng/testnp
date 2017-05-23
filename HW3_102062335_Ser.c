@@ -255,12 +255,15 @@ void* service( void *arg) {
 			char buf[MAXLINE];
 			bzero(buf, sizeof(buf));
 			read(clisock.clifd, buf, MAXLINE);
-			int all, part;
+			int end, from;
 			char fname[40];
-			sscanf(buf, "%d%d", &part, &all);
-			printf("%d/%d\n", part, all);
+			sscanf(buf, "%d%d", &from, &end);
+			printf("send %d/%d\n", from, end);
 
+			sprintf(buf, "%d", from);
+			write(clisock.clifd, buf, strlen(buf));
 			bzero(buf, sizeof(buf));
+			
 			read(clisock.clifd, buf, MAXLINE);
 			sprintf(fname, "%s", buf);
 
@@ -268,13 +271,12 @@ void* service( void *arg) {
 			char dd[80];
 			sprintf(dd, "%s/%s", "serData", fname);
 			file = fopen(dd, "r");
-			fseek(file, 0, SEEK_END); // seek to end of file
-			int size = ftell(file); // get current file pointer
-			int thispart = size/all;
+
 			sleep(1);
 			char send[MAXLINE];
-			fseek(file, 0, SEEK_SET);
-			fread(send, 1, MAXLINE, file);
+			fseek(file, from, SEEK_SET);
+			int ss = end - from +1;
+			fread(send, 1, ss, file);
 			write(clisock.clifd, send, strlen(send));
 			fclose(file);
 			pthread_mutex_unlock(&fileLock);
@@ -299,16 +301,25 @@ void* service( void *arg) {
 			return NULL;
 		}
 		if(!strcmp(msg, "recv")) {
-			bzero(msg, sizeof(msg));
-			read(clisock.clifd, msg, MAXLINE);
+			char buf[MAXLINE];
+			bzero(buf, sizeof(buf));
+			read(clisock.clifd, buf, MAXLINE);
 			char dd[80];
-			sprintf(dd, "serData/%s", msg);
-			bzero(msg, sizeof(msg));
-			read(clisock.clifd, msg, MAXLINE);
+			sprintf(dd, "%s/%s", "serData", buf);
+			bzero(buf, sizeof(buf));
+			int start, end;
+			read(clisock.clifd, buf, MAXLINE);
+			puts(buf);
+			sscanf(buf, "%d", &start);
+			bzero(buf, sizeof(buf));
+			char nnn[MAXLINE];
+			read(clisock.clifd, nnn, MAXLINE);
 
 			pthread_mutex_lock(&fileLock);
 			file = fopen(dd, "w");
-			fprintf(file, "%s", msg);
+			fseek(file, start, SEEK_SET);
+			//int ss = end-start+1;
+			fwrite(nnn, 1, strlen(nnn), file);
 			fclose(file);
 			pthread_mutex_unlock(&fileLock);
 			close(clisock.clifd);
@@ -320,17 +331,17 @@ void* service( void *arg) {
 			// i need know filename
 			puts("sendf");
 			bzero(buf, sizeof(buf));
-			read(connfd, buf, MAXLINE);
+			read(clisock.clifd, buf, MAXLINE);
 			char dip[40];
 			int dport;
 			char filename[40];
-			sscanf(buf, "%s%d%s", dip, &dport, filename);
+			int from, end;
+			sscanf(buf, "%s%d%s%d%d", dip, &dport, filename, &from, &end);
 			printf("to %s %d, file: %s\n", dip, dport, filename);
-			int part, all;
+			
 			bzero(buf, sizeof(buf));
-			read(connfd, buf, MAXLINE);
-			sscanf(buf, "%d%d", &part, &all);
-			printf("send: %d/%d\n", part, all);
+			
+			printf("sendf: from %d to %d\n", from, end);
 
 			struct sockaddr_in dstaddr;
 			int dstfd;
@@ -348,20 +359,35 @@ void* service( void *arg) {
 			sleep(1);
 			write(dstfd, filename, strlen(filename));
 			sleep(1);
+			sprintf(buf, "%d", from);
+			write(dstfd, buf, strlen(buf));
+			sleep(1);
 			char dd[80];
 			char bufff[MAXLINE];
-			strcpy(bufff, "");
+			
 			sprintf(dd, "%s/%s", "serData", filename);
 			pthread_mutex_lock(&fileLock);
 
 			file = fopen(dd, "r");
-			fread(bufff, 1, MAXLINE, file);
+			fseek(file, from, SEEK_SET);
+			int ss = end - from + 1;
+			bzero(buf, sizeof(buf));
+			fread(buf, 1, ss, file);
 			fclose(file);
 			pthread_mutex_unlock(&fileLock);
-			write(dstfd, bufff, strlen(bufff));
+			write(dstfd, buf, strlen(buf));
+			printf("%s\n", buf);
 			puts("Done sendf");
 			return NULL;
 		}
+		
+		if(!strcmp(msg, "c")) {
+			pthread_mutex_lock(&fileLock);
+			fclose(file);
+			pthread_mutex_unlock(&fileLock);
+			return NULL;
+		}
+		
 	}
 }
 

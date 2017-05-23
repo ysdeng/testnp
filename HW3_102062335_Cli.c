@@ -1,5 +1,8 @@
 #include "HW3_102062335.h"
-
+/*
+get finished
+put TODO QQ
+*/
 int port;
 
 typedef struct {
@@ -229,17 +232,15 @@ int main(int argc, char **argv) {
 			bzero(msg, sizeof(msg));
 			read(dstfd, msg, MAXLINE);
 			int size = atoi(msg);
-			char tttt[size];
-			memset(tttt, '0', sizeof(tttt));
-			FILE *fp;
-			char dd[80];
-			sprintf(dd, "%s/%s", user, filename);
-			fp = fopen(dd, "w");
-			fprintf(fp, "%s", tttt);
-			fclose(fp);
-			
+			int from, end;
+			from = 0, end = 0;
 			bzero(mmmmmax, sizeof(mmmmmax));
 			for(j = 0; j < count; j++) {
+
+				from = end;
+				end = from+size/count+1;
+				if(end>size) end = size;
+
 				struct sockaddr_in dstaddr;
 				int dstfd;
 
@@ -257,6 +258,9 @@ int main(int argc, char **argv) {
 
 				printf("%s\n", tmp[j].name);
 				write(dstfd, "getf", strlen("getf"));
+				sleep(1);
+				sprintf(msg, "%d %d", from, end);
+				write(dstfd, msg, strlen(msg));
 
 				sendinfo *d;
 		        d = malloc(sizeof(sendinfo));
@@ -268,11 +272,6 @@ int main(int argc, char **argv) {
 			}
 			printf("wait....\n");
 			sleep(5);
-			pthread_mutex_lock(&fileLock);
-			file = fopen(dd, "w");
-			fprintf(file, "%s", mmmmmax);
-			fclose(file);
-			pthread_mutex_unlock(&fileLock);
 			updatef(sockfd);
 			printf("Done....\n");
 		}
@@ -365,14 +364,24 @@ int main(int argc, char **argv) {
 				bzero(msg, sizeof(msg));
 				printf("reciever ip>> ");
 				scanf("%s", rip);
-				printf("reciever port>> ");
-				scanf("%d", &rport);
+				//printf("reciever port>> ");
+				//scanf("%d", &rport);
 				rport = 1500;
 			}
 			else {
 				printf("wrong reciever.\n");
 				continue;
 			}
+
+			pthread_mutex_lock(&fileLock);
+			char dd[80];
+			sprintf(dd, "%s/%s", user, filename);
+			file = fopen(dd, "r");
+			fseek(file, 0, SEEK_END); 
+			int size = ftell(file);
+			fclose(file);
+			pthread_mutex_unlock(&fileLock);
+			printf("file size: %d\n", size);
 
 			if(count == 1) {
 				printf("send myself\n");
@@ -393,24 +402,38 @@ int main(int argc, char **argv) {
 				sleep(1);
 				write(dstfd, filename, strlen(filename));
 				sleep(1);
+				sprintf(msg, "%d %d", 0, size);
+				write(dstfd, msg, strlen(msg));
+				sleep(1);
 				char dd[80];
-				char bufff[MAXLINE];
-				strcpy(bufff, "");
 				sprintf(dd, "%s/%s", user, filename);
 				pthread_mutex_lock(&fileLock);
-
 				file = fopen(dd, "r");
+				char bufff[MAXLINE];
 				fread(bufff, 1, MAXLINE, file);
 				fclose(file);
 				pthread_mutex_unlock(&fileLock);
 				write(dstfd, bufff, strlen(bufff));
+				printf("Done self send\n");
 			}
 			else {
 				int selfpart;
+
+				int from, end;
+				int self_from, self_end;
+				from = end = 0;
+
 				for(i = 0; i < count; i++) {
+
+					from = end;
+					end = from+size/count+1;
+					if(end>size) end = size;
+
 					if(!strcmp(tmp[i].name, user)) {
 						selfpart = i;
-						continue;
+						self_from = from;
+						self_end = end;
+						//continue;
 					}
 					struct sockaddr_in dstaddr;
 					int dstfd;
@@ -418,24 +441,24 @@ int main(int argc, char **argv) {
 					dstfd = socket(AF_INET, SOCK_STREAM, 0);
 					bzero(&dstaddr, sizeof(dstaddr));
 					if(!strcmp(tmp[i].name, "server"))
-						dstaddr.sin_port = htons(tmp[i].port);
+						dstaddr.sin_port = htons(serPort);
 					else
 						dstaddr.sin_port = htons(1500);
 					dstaddr.sin_family = AF_INET;
-					dstaddr.sin_addr.s_addr = inet_addr(tmp[i].ip);
+					if(!strcmp(tmp[i].name, "server"))
+						dstaddr.sin_addr.s_addr = inet_addr(serIP);
+					else
+						dstaddr.sin_addr.s_addr = inet_addr(tmp[i].ip);
 					connect(dstfd, (SA*)&dstaddr, sizeof(dstaddr));
 					write(dstfd, "sendf", strlen("sendf"));
 					sleep(1);
 					//send dst infos[ip, port] | filename
-					sprintf(msg, "%s %d %s", rip, rport, filename);
-					write(dstfd, msg, strlen(msg));
-					sleep(1);
-					sprintf(msg, "%d %d", i, count);
+					sprintf(msg, "%s %d %s %d %d", rip, rport, filename, from, end);
 					write(dstfd, msg, strlen(msg));
 					sleep(1);
 				}
-
-				printf("i send: %d/%d\n", selfpart, count);
+				/*
+				printf("i send from %d to %d\n", self_from, self_end);
 				struct sockaddr_in dstaddr;
 				int dstfd;
 
@@ -452,20 +475,44 @@ int main(int argc, char **argv) {
 				sleep(1);
 				write(dstfd, filename, strlen(filename));
 				sleep(1);
+				sprintf(msg, "%d", self_from);
+				write(dstfd, msg, strlen(msg));
+				sleep(1);
 				char dd[80];
-				char bufff[MAXLINE];
-				strcpy(bufff, "");
+				char msgff[MAXLINE];
+				
 				sprintf(dd, "%s/%s", user, filename);
 				pthread_mutex_lock(&fileLock);
 
 				file = fopen(dd, "r");
-				fread(bufff, 1, MAXLINE, file);
+				fseek(file, self_from, SEEK_SET);
+				int ss = self_end - self_from + 1;
+				bzero(msg, sizeof(msg));
+				char send[MAXLINE];
+				fread(send, 1, ss, file);
 				fclose(file);
 				pthread_mutex_unlock(&fileLock);
-				write(dstfd, bufff, strlen(bufff));
+				write(dstfd, send, strlen(send));
+				printf("%s\n", send);
+				printf("Done self send\n");
+				*/
 			}
-			sleep(5);
+			sleep(8);
 			puts("Done put...");
+			/*
+			struct sockaddr_in dstaddr;
+			int dstfd;
+
+			dstfd = socket(AF_INET, SOCK_STREAM, 0);
+			bzero(&dstaddr, sizeof(dstaddr));
+
+			dstaddr.sin_port = htons(rport);
+
+			dstaddr.sin_family = AF_INET;
+			dstaddr.sin_addr.s_addr = inet_addr(rip);
+			connect(dstfd, (SA*)&dstaddr, sizeof(dstaddr));
+			write(dstfd, "c", strlen("c"));
+			*/
 		}
 		if(!strcmp(msg, "serf")) {
 			write(sockfd, msg, strlen(msg));
@@ -483,17 +530,30 @@ void *recf( void * arg) {
 	free(arg);
 	char buf[MAXLINE];
 
-	sprintf(buf, "%d %d", info.part, info.all);
-	write(info.connfd, buf, strlen(buf));
 	sleep(1);
 	write(info.connfd, info.name, strlen(info.name));
 
+	read(info.connfd, buf, MAXLINE);
+	
+	int start, end;
+	sscanf(buf, "%d", &start);
+	printf("rcver: start %d", start);
+
 	char buff[MAXLINE];
-	strcpy(buff, "");
+	bzero(buff, sizeof(buff));
 	read(info.connfd, buff, sizeof(buff));
+	puts(buff);
+	
 	bzero(buf, sizeof(buf));
 	
-	strncpy(mmmmmax, buff, strlen(buff));
+	pthread_mutex_lock(&fileLock);
+	char dd[80];
+	sprintf(dd, "%s/%s", user, info.name);
+	file = fopen(dd, "w");
+	fseek(file, start, SEEK_SET);
+	fwrite(buff, 1, strlen(buff), file);
+	//fclose(file);
+	pthread_mutex_unlock(&fileLock);
 
 	puts("recf Done...");
 	return NULL;
@@ -530,26 +590,28 @@ void *doSomething(void *arg) {
 			char buf[MAXLINE];
 			bzero(buf, sizeof(buf));
 			read(connfd, buf, MAXLINE);
-			int all, part;
+			int end, from;
 			char fname[40];
-			sscanf(buf, "%d%d", &part, &all);
-			printf("%d/%d\n", part, all);
+			sscanf(buf, "%d%d", &from, &end);
+			printf("send %d/%d\n", from, end);
 
+			sprintf(buf, "%d", from);
+			write(connfd, buf, strlen(buf));
 			bzero(buf, sizeof(buf));
+			
 			read(connfd, buf, MAXLINE);
 			sprintf(fname, "%s", buf);
 
 			pthread_mutex_lock(&fileLock);
 			char dd[80];
-			sprintf(dd, "%s/%s", user, fname);
+			sprintf(dd, "%s/%s", "serData", fname);
 			file = fopen(dd, "r");
-			fseek(file, 0, SEEK_END); // seek to end of file
-			int size = ftell(file); // get current file pointer
-			int thispart = size/all;
+
 			sleep(1);
 			char send[MAXLINE];
-			fseek(file, 0, SEEK_SET);
-			fread(send, 1, MAXLINE, file);
+			fseek(file, from, SEEK_SET);
+			int ss = end - from +1;
+			fread(send, 1, ss, file);
 			write(connfd, send, strlen(send));
 			fclose(file);
 			pthread_mutex_unlock(&fileLock);
@@ -562,17 +624,16 @@ void *doSomething(void *arg) {
 			// i need know filename
 			puts("sendf");
 			bzero(buf, sizeof(buf));
-			read(connfd, buf, MAXLINE);
 			char dip[40];
 			int dport;
 			char filename[40];
-			sscanf(buf, "%s%d%s", dip, &dport, filename);
-			printf("to %s %d, file: %s\n", dip, dport, filename);
-			int part, all;
-			bzero(buf, sizeof(buf));
+			int from, end;
 			read(connfd, buf, MAXLINE);
-			sscanf(buf, "%d%d", &part, &all);
-			printf("send: %d/%d\n", part, all);
+			sscanf(buf, "%s%d%s%d%d", dip, &dport, filename, &from, &end);
+			printf("to %s %d, file: %s\n", dip, dport, filename);
+			
+			bzero(buf, sizeof(buf));
+			printf("sendf: from %d to %d\n", from, end);
 
 			struct sockaddr_in dstaddr;
 			int dstfd;
@@ -590,14 +651,18 @@ void *doSomething(void *arg) {
 			sleep(1);
 			write(dstfd, filename, strlen(filename));
 			sleep(1);
+			sprintf(buf, "%d", from);
+			write(dstfd, buf, strlen(buf));
+			sleep(1);
 			char dd[80];
-			char bufff[MAXLINE];
-			strcpy(bufff, "");
+			
 			sprintf(dd, "%s/%s", user, filename);
 			pthread_mutex_lock(&fileLock);
-
+			char bufff[MAXLINE];
 			file = fopen(dd, "r");
-			fread(bufff, 1, MAXLINE, file);
+			fseek(file, from, SEEK_SET);
+			int ss = end-from+1;
+			fread(bufff, 1, ss, file);
 			fclose(file);
 			pthread_mutex_unlock(&fileLock);
 			write(dstfd, bufff, strlen(bufff));
@@ -610,16 +675,40 @@ void *doSomething(void *arg) {
 			char dd[80];
 			sprintf(dd, "%s/%s", user, buf);
 			bzero(buf, sizeof(buf));
+			int start, end;
+			read(connfd, buf, MAXLINE);
+			puts(buf);
+			sscanf(buf, "%d", &start);
+			bzero(buf, sizeof(buf));
 			read(connfd, buf, MAXLINE);
 
 			pthread_mutex_lock(&fileLock);
 			file = fopen(dd, "w");
-			fprintf(file, "%s", buf);
+			fseek(file, start, SEEK_SET);
+			//int ss = end-start+1;
+			fwrite(buf, 1, strlen(buf), file);
 			fclose(file);
 			pthread_mutex_unlock(&fileLock);
 			close(connfd);
 			printf("Done recv\n");
-			fileadd = 1;
+			return NULL;
+		}
+		if(!strcmp(buf, "c")) {
+			pthread_mutex_lock(&fileLock);
+			fclose(file);
+			pthread_mutex_unlock(&fileLock);
+
+			struct sockaddr_in dstaddr;
+			int dstfd;
+			dstfd = socket(AF_INET, SOCK_STREAM, 0);
+			bzero(&dstaddr, sizeof(dstaddr));
+
+			dstaddr.sin_port = htons(serPort);
+
+			dstaddr.sin_family = AF_INET;
+			dstaddr.sin_addr.s_addr = inet_addr(serIP);
+			connect(dstfd, (SA*)&dstaddr, sizeof(dstaddr));
+			updatef(dstfd);
 			return NULL;
 		}
 	}
