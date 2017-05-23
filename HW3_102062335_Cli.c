@@ -433,7 +433,7 @@ int main(int argc, char **argv) {
 						selfpart = i;
 						self_from = from;
 						self_end = end;
-						//continue;
+						continue;
 					}
 					struct sockaddr_in dstaddr;
 					int dstfd;
@@ -457,7 +457,7 @@ int main(int argc, char **argv) {
 					write(dstfd, msg, strlen(msg));
 					sleep(1);
 				}
-				/*
+				
 				printf("i send from %d to %d\n", self_from, self_end);
 				struct sockaddr_in dstaddr;
 				int dstfd;
@@ -495,9 +495,10 @@ int main(int argc, char **argv) {
 				write(dstfd, send, strlen(send));
 				printf("%s\n", send);
 				printf("Done self send\n");
-				*/
+				sleep(3);
+				write(dstfd, "c", strlen("c"));
 			}
-			sleep(8);
+			sleep(5);
 			puts("Done put...");
 			/*
 			struct sockaddr_in dstaddr;
@@ -513,6 +514,7 @@ int main(int argc, char **argv) {
 			connect(dstfd, (SA*)&dstaddr, sizeof(dstaddr));
 			write(dstfd, "c", strlen("c"));
 			*/
+			
 		}
 		if(!strcmp(msg, "serf")) {
 			write(sockfd, msg, strlen(msg));
@@ -680,14 +682,16 @@ void *doSomething(void *arg) {
 			puts(buf);
 			sscanf(buf, "%d", &start);
 			bzero(buf, sizeof(buf));
-			read(connfd, buf, MAXLINE);
+			char aa[MAXLINE];
+			read(connfd, aa, MAXLINE);
 
 			pthread_mutex_lock(&fileLock);
+
 			file = fopen(dd, "w");
 			fseek(file, start, SEEK_SET);
 			//int ss = end-start+1;
-			fwrite(buf, 1, strlen(buf), file);
-			fclose(file);
+			fwrite(aa, 1, strlen(aa), file);
+			//fclose(file);
 			pthread_mutex_unlock(&fileLock);
 			close(connfd);
 			printf("Done recv\n");
