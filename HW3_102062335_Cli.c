@@ -400,7 +400,7 @@ int main(int argc, char **argv) {
 
 				write(dstfd, "recv", strlen("recv"));
 				sleep(1);
-				sprintf(msg, "%s %d", filename, size);
+				sprintf(msg, "%s %d", filename, 0);
 				write(dstfd, msg, strlen(msg));
 				sleep(1);
 				char dd[80];
@@ -669,7 +669,7 @@ void *doSomething(void *arg) {
 			fseek(file, start, SEEK_SET);
 			//int ss = end-start+1;
 			fwrite(aa, 1, strlen(aa), file);
-			//fclose(file);
+			fclose(file);
 			pthread_mutex_unlock(&fileLock);
 			close(connfd);
 			fileadd = 1;
