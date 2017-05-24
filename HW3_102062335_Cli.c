@@ -585,7 +585,7 @@ void *doSomething(void *arg) {
 
 			pthread_mutex_lock(&fileLock);
 			char dd[80];
-			sprintf(dd, "%s/%s", usr, fname);
+			sprintf(dd, "%s/%s", user, fname);
 			file = fopen(dd, "r");
 
 			sleep(1);
