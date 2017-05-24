@@ -588,14 +588,13 @@ void *doSomething(void *arg) {
 			sprintf(dd, "%s/%s", user, fname);
 			file = fopen(dd, "r");
 
-			sleep(1);
 			char send[MAXLINE];
 			fseek(file, from, SEEK_SET);
 			int ss = end - from +1;
 			fread(send, 1, ss, file);
-			write(connfd, send, strlen(send));
 			fclose(file);
 			pthread_mutex_unlock(&fileLock);
+			write(connfd, send, strlen(send));
 			close(connfd);
 			printf("Done getf\n");
 			return NULL;

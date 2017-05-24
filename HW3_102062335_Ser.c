@@ -271,15 +271,13 @@ void* service( void *arg) {
 			char dd[80];
 			sprintf(dd, "%s/%s", "serData", fname);
 			file = fopen(dd, "r");
-
-			sleep(1);
 			char send[MAXLINE];
 			fseek(file, from, SEEK_SET);
 			int ss = end - from +1;
 			fread(send, 1, ss, file);
-			write(clisock.clifd, send, strlen(send));
 			fclose(file);
 			pthread_mutex_unlock(&fileLock);
+			write(clisock.clifd, send, strlen(send));
 			close(clisock.clifd);
 			printf("Done getf\n");
 			return NULL;
