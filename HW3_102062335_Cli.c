@@ -491,26 +491,9 @@ int main(int argc, char **argv) {
 				write(dstfd, send, strlen(send));
 				printf("%s\n", send);
 				printf("Done self send\n");
-				sleep(3);
-				write(dstfd, "c", strlen("c"));
 			}
 			sleep(5);
 			puts("Done put...");
-			/*
-			struct sockaddr_in dstaddr;
-			int dstfd;
-
-			dstfd = socket(AF_INET, SOCK_STREAM, 0);
-			bzero(&dstaddr, sizeof(dstaddr));
-
-			dstaddr.sin_port = htons(rport);
-
-			dstaddr.sin_family = AF_INET;
-			dstaddr.sin_addr.s_addr = inet_addr(rip);
-			connect(dstfd, (SA*)&dstaddr, sizeof(dstaddr));
-			write(dstfd, "c", strlen("c"));
-			*/
-			
 		}
 		if(!strcmp(msg, "serf")) {
 			write(sockfd, msg, strlen(msg));
@@ -602,7 +585,7 @@ void *doSomething(void *arg) {
 
 			pthread_mutex_lock(&fileLock);
 			char dd[80];
-			sprintf(dd, "%s/%s", "serData", fname);
+			sprintf(dd, "%s/%s", usr, fname);
 			file = fopen(dd, "r");
 
 			sleep(1);
@@ -689,6 +672,7 @@ void *doSomething(void *arg) {
 			//fclose(file);
 			pthread_mutex_unlock(&fileLock);
 			close(connfd);
+			fileadd = 1;
 			printf("Done recv\n");
 			return NULL;
 		}
