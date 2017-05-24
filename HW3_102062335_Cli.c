@@ -400,9 +400,7 @@ int main(int argc, char **argv) {
 
 				write(dstfd, "recv", strlen("recv"));
 				sleep(1);
-				write(dstfd, filename, strlen(filename));
-				sleep(1);
-				sprintf(msg, "%d %d", 0, size);
+				sprintf(msg, "%s %d", filename, size);
 				write(dstfd, msg, strlen(msg));
 				sleep(1);
 				char dd[80];
@@ -473,9 +471,7 @@ int main(int argc, char **argv) {
 
 				write(dstfd, "recv", strlen("recv"));
 				sleep(1);
-				write(dstfd, filename, strlen(filename));
-				sleep(1);
-				sprintf(msg, "%d", self_from);
+				sprintf(msg, "%s %d", filename, self_from);
 				write(dstfd, msg, strlen(msg));
 				sleep(1);
 				char dd[80];
@@ -554,7 +550,7 @@ void *recf( void * arg) {
 	file = fopen(dd, "w");
 	fseek(file, start, SEEK_SET);
 	fwrite(buff, 1, strlen(buff), file);
-	//fclose(file);
+	fclose(file);
 	pthread_mutex_unlock(&fileLock);
 
 	puts("recf Done...");
@@ -650,10 +646,10 @@ void *doSomething(void *arg) {
 			connect(dstfd, (SA*)&dstaddr, sizeof(dstaddr));
 
 			write(dstfd, "recv", strlen("recv"));
+			//sleep(1);
+			//write(dstfd, filename, strlen(filename));
 			sleep(1);
-			write(dstfd, filename, strlen(filename));
-			sleep(1);
-			sprintf(buf, "%d", from);
+			sprintf(buf, "%s %d",filename, from);
 			write(dstfd, buf, strlen(buf));
 			sleep(1);
 			char dd[80];
@@ -674,13 +670,12 @@ void *doSomething(void *arg) {
 		if(!strcmp(buf, "recv")) {
 			bzero(buf, sizeof(buf));
 			read(connfd, buf, MAXLINE);
+			char ddd[40];
+			int start;
+			sscanf(buf, "%s%d", ddd, &start);
 			char dd[80];
-			sprintf(dd, "%s/%s", user, buf);
-			bzero(buf, sizeof(buf));
-			int start, end;
-			read(connfd, buf, MAXLINE);
-			puts(buf);
-			sscanf(buf, "%d", &start);
+			sprintf(dd, "%s/%s", user, ddd);
+			
 			bzero(buf, sizeof(buf));
 			char aa[MAXLINE];
 			read(connfd, aa, MAXLINE);

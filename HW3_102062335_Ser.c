@@ -304,14 +304,13 @@ void* service( void *arg) {
 			//char buf[MAXLINE];
 			bzero(buf, sizeof(buf));
 			read(clisock.clifd, buf, MAXLINE);
+			char ddd[40];
+			int start;
+			sscanf(buf, "%s%d", ddd, &start);
 			char dd[80];
-			sprintf(dd, "%s/%s", "serData", buf);
+			sprintf(dd, "%s/%s", "serData", ddd);
 			bzero(buf, sizeof(buf));
-			int start, end;
-			read(clisock.clifd, buf, MAXLINE);
-			puts(buf);
-			sscanf(buf, "%d", &start);
-			bzero(buf, sizeof(buf));
+
 			char nnn[MAXLINE];
 			read(clisock.clifd, nnn, MAXLINE);
 
@@ -359,9 +358,7 @@ void* service( void *arg) {
 
 			write(dstfd, "recv", strlen("recv"));
 			sleep(1);
-			write(dstfd, filename, strlen(filename));
-			sleep(1);
-			sprintf(buf, "%d", from);
+			sprintf(buf, "%s %d",filename, from);
 			write(dstfd, buf, strlen(buf));
 			sleep(1);
 			char dd[80];
@@ -375,7 +372,7 @@ void* service( void *arg) {
 			int ss = end - from + 1;
 			bzero(buf, sizeof(buf));
 			fread(buf, 1, ss, file);
-			//fclose(file);
+			fclose(file);
 			pthread_mutex_unlock(&fileLock);
 			write(dstfd, buf, strlen(buf));
 			printf("%s\n", buf);
